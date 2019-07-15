@@ -33,32 +33,36 @@ if not os.path.exists("data"):
     subprocess.check_output(
         "mkdir data && curl https://storage.googleapis.com/wandb/flower-enhance.tar.gz | tar xzf - -C data", shell=True)
 
-
+#used to limit the iterations during an epoch
 config.steps_per_epoch = len(
     glob.glob(train_dir + "/*-in.jpg")) // config.batch_size
 config.val_steps_per_epoch = len(
     glob.glob(val_dir + "/*-in.jpg")) // config.batch_size
 
-
+#it is used to return the training images following call in line 114
 def image_generator(batch_size, img_dir):
     """A generator that returns small images and large images.  DO NOT ALTER the validation set"""
+    #The function takes in the batch processing size and processes batch_size images at a time
     input_filenames = glob.glob(img_dir + "/*-in.jpg")
     counter = 0
     random.shuffle(input_filenames)
+    #input files contain the list of all files
     while True:
         small_images = np.zeros(
             (batch_size, config.input_width, config.input_height, 3))
         large_images = np.zeros(
             (batch_size, config.output_width, config.output_height, 3))
+        #allocate space for batch_size of small and large images
         if counter+batch_size >= len(input_filenames):
             counter = 0
-        for i in range(batch_size):
+        for i in range(batch_size): #iterates through the images
             img = input_filenames[counter + i]
             small_images[i] = np.array(Image.open(img)) / 255.0
             large_images[i] = np.array(
                 Image.open(img.replace("-in.jpg", "-out.jpg"))) / 255.0
         yield (small_images, large_images)
         counter += batch_size
+        #this keeps producing images to the fit_generator function in batches of batch_size
 
 
 def perceptual_distance(y_true, y_pred):
@@ -109,6 +113,9 @@ model.compile(optimizer='adam', loss='mse',
               metrics=[perceptual_distance])
 #we are defining the adam optimizer to control learning rate, loss as mse and perceptual_distance as a metric
 
+#fit_generator is an advanced version of fit
+#image data can be augmented on the fly using functions
+#epoch is the number of times we go through the training set
 model.fit_generator(image_generator(config.batch_size, train_dir),
                     steps_per_epoch=config.steps_per_epoch,
                     epochs=config.num_epochs, callbacks=[
