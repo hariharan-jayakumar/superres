@@ -1,26 +1,29 @@
-import random
-import glob
-import subprocess
-import os
+import random #to randomize the image order in random generator function
+import glob #to read images from file
+import subprocess #to run the LINUX command
+import os #to check if path exists
 from PIL import Image
-import numpy as np
+import numpy as np #using numpy arrays
 from tensorflow.keras.models import Sequential
 from tensorflow.keras import layers
 from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import Callback
-import wandb
+import wandb #to link the code with wandb
 from wandb.keras import WandbCallback
 
-run = wandb.init(project='superres')
-config = run.config
+run = wandb.init(project='superres') #connects to your project
+config = run.config #the configurations for the run
 
-config.num_epochs = 50
+config.num_epochs = 50 #number of times the model will cycle through the data
 config.batch_size = 32
+#size of input image
 config.input_height = 32
 config.input_width = 32
+#size of output image
 config.output_height = 256
 config.output_width = 256
 
+#address for validation and train datasets
 val_dir = 'data/test'
 train_dir = 'data/train'
 
@@ -29,6 +32,7 @@ if not os.path.exists("data"):
     print("Downloading flower dataset...")
     subprocess.check_output(
         "mkdir data && curl https://storage.googleapis.com/wandb/flower-enhance.tar.gz | tar xzf - -C data", shell=True)
+
 
 config.steps_per_epoch = len(
     glob.glob(train_dir + "/*-in.jpg")) // config.batch_size
@@ -84,20 +88,26 @@ class ImageLogger(Callback):
             "examples": [wandb.Image(np.concatenate([in_resized[i] * 255, o * 255, out_sample_images[i] * 255], axis=1)) for i, o in enumerate(preds)]
         }, commit=False)
 
-
+#we are defining a sequential model
 model = Sequential()
+#first layer contains 3 nodes with filter size (3,3) and activation, padding and input shape are defined
 model.add(layers.Conv2D(3, (3, 3), activation='relu', padding='same',
                         input_shape=(config.input_width, config.input_height, 3)))
+#we will get an output of size (config.input_width x config.input_height x 3)
 model.add(layers.UpSampling2D())
+#repeats the image and increases each dimension size by 2 => size is ((config.input_width x 2) x (config.input_height x 2) x 3)
+model.add(layers.Conv2D(3, (3, 3), activation='relu', padding='same'))
+model.add(layers.UpSampling2D())
+#size is ((config.input_width x 4) x (config.input_height x 4) x 3)
 model.add(layers.Conv2D(3, (3, 3), activation='relu', padding='same'))
 model.add(layers.UpSampling2D())
 model.add(layers.Conv2D(3, (3, 3), activation='relu', padding='same'))
-model.add(layers.UpSampling2D())
-model.add(layers.Conv2D(3, (3, 3), activation='relu', padding='same'))
+#size is ((config.input_width x 8) x (config.input_height x 8) x 3)
 
 # DONT ALTER metrics=[perceptual_distance]
 model.compile(optimizer='adam', loss='mse',
               metrics=[perceptual_distance])
+#we are defining the adam optimizer to control learning rate, loss as mse and perceptual_distance as a metric
 
 model.fit_generator(image_generator(config.batch_size, train_dir),
                     steps_per_epoch=config.steps_per_epoch,
