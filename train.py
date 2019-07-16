@@ -114,12 +114,12 @@ model.compile(optimizer='adam', loss='mse',
 #we are defining the adam optimizer to control learning rate, loss as mse and perceptual_distance as a metric
 """
 model = Sequential()
-model.add(Conv2D(nb_filter=128, nb_row=9, nb_col=9, init='glorot_uniform',
+model.add(layers.Conv2D(nb_filter=128, nb_row=9, nb_col=9, init='glorot_uniform',
                  activation='relu', border_mode='valid', bias=True, input_shape=(None, None, 1)))
-model.add(Conv2D(nb_filter=64, nb_row=3, nb_col=3, init='glorot_uniform',
+model.add(layers.Conv2D(nb_filter=64, nb_row=3, nb_col=3, init='glorot_uniform',
                  activation='relu', border_mode='same', bias=True))
 # SRCNN.add(BatchNormalization())
-model.add(Conv2D(nb_filter=1, nb_row=5, nb_col=5, init='glorot_uniform',
+model.add(layers.Conv2D(nb_filter=1, nb_row=5, nb_col=5, init='glorot_uniform',
                  activation='linear', border_mode='valid', bias=True))
 adam = Adam(lr=0.0003)
 model.compile(optimizer=adam, loss='mse', metrics=[perceptual_distance])
