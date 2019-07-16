@@ -91,16 +91,16 @@ class ImageLogger(Callback):
         wandb.log({
             "examples": [wandb.Image(np.concatenate([in_resized[i] * 255, o * 255, out_sample_images[i] * 255], axis=1)) for i, o in enumerate(preds)]
         }, commit=False)
-"""
+
 #we are defining a sequential model
 model = Sequential()
 #first layer contains 3 nodes with filter size (3,3) and activation, padding and input shape are defined
-model.add(layers.Conv2D(3, (3, 3), activation='relu', padding='same',
+model.add(layers.Conv2D(128, (9, 9), activation='relu', padding='same',
                         input_shape=(config.input_width, config.input_height, 3)))
 #we will get an output of size (config.input_width x config.input_height x 3)
 model.add(layers.UpSampling2D())
 #repeats the image and increases each dimension size by 2 => size is ((config.input_width x 2) x (config.input_height x 2) x 3)
-model.add(layers.Conv2D(3, (3, 3), activation='relu', padding='same'))
+model.add(layers.Conv2D(64, (3, 3), activation='relu', padding='same'))
 model.add(layers.UpSampling2D())
 #size is ((config.input_width x 4) x (config.input_height x 4) x 3)
 model.add(layers.Conv2D(3, (3, 3), activation='relu', padding='same'))
@@ -112,17 +112,6 @@ model.add(layers.Conv2D(3, (3, 3), activation='relu', padding='same'))
 model.compile(optimizer='adam', loss='mse',
               metrics=[perceptual_distance])
 #we are defining the adam optimizer to control learning rate, loss as mse and perceptual_distance as a metric
-"""
-model = Sequential()
-model.add(layers.Conv2D(nb_filter=128, nb_row=9, nb_col=9, init='glorot_uniform',
-                 activation='relu', border_mode='valid', bias=True, input_shape=(config.input_width, config.input_height, 3)))
-model.add(layers.Conv2D(nb_filter=64, nb_row=3, nb_col=3, init='glorot_uniform',
-                 activation='relu', border_mode='same', bias=True))
-# SRCNN.add(BatchNormalization())
-model.add(layers.Conv2D(nb_filter=1, nb_row=5, nb_col=5, init='glorot_uniform',
-                 activation='linear', border_mode='valid', bias=True))
-adam = Adam(lr=0.0003)
-model.compile(optimizer=adam, loss='mse', metrics=[perceptual_distance])
 
 
 #fit_generator is an advanced version of fit
