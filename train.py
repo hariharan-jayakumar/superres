@@ -10,6 +10,19 @@ from tensorflow.keras import backend as K
 from tensorflow.keras.callbacks import Callback
 import wandb #to link the code with wandb
 from wandb.keras import WandbCallback
+from keras.preprocessing.image import ImageDataGenerator
+
+image_gen = ImageDataGenerator(rotation_range=15,
+                               width_shift_range=0.1,
+                               height_shift_range=0.1,
+                               shear_range=0.01,
+                               zoom_range=[0.9, 1.25],
+                               horizontal_flip=True,
+                               vertical_flip=False,
+                               fill_mode='reflect',
+                               data_format='channels_last',
+                               brightness_range=[0.5, 1.5])
+
 
 run = wandb.init(project='superres') #connects to your project
 config = run.config #the configurations for the run
@@ -60,7 +73,18 @@ def image_generator(batch_size, img_dir):
             small_images[i] = np.array(Image.open(img)) / 255.0
             large_images[i] = np.array(
                 Image.open(img.replace("-in.jpg", "-out.jpg"))) / 255.0
+        k=0;
+        small_images1 = small_images
+        large_images1 = large_images
         yield (small_images, large_images)
+        for k in range(9):
+                transform_params = get_random_transform((32,32,3),seed=3)
+                small_images1 = apply_transform(small_images1, transform_params)
+                large_images1 = apply_transform(large_images1,transform_params)
+                yield (small_images1, large_images1)
+                small_images1 = small_images
+                large_images1 = large_images
+                k=k+1
         counter += batch_size
         #this keeps producing images to the fit_generator function in batches of batch_size
 
@@ -123,3 +147,4 @@ model.fit_generator(image_generator(config.batch_size, train_dir),
                         ImageLogger(), WandbCallback()],
                     validation_steps=config.val_steps_per_epoch,
                     validation_data=val_generator)
+
